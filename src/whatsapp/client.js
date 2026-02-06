@@ -136,6 +136,24 @@ class WhatsAppClient extends EventEmitter {
                 await this.handleIncomingMessage(message);
             }
         });
+
+        // Message update handler (for revokes/deletes)
+        this.socket.ev.on('messages.update', async (items) => {
+            for (const item of items) {
+                if (item.update && item.update.message === null) {
+                    // This is a common pattern for revoked messages in some Baileys versions
+                    // but we also check for protocolMessage below
+                }
+
+                // Check if message was revoked
+                if (item.update?.protocolMessage?.type === 0 || item.update?.message === null) {
+                    const senderId = item.key.remoteJid;
+                    const messageId = item.key.id;
+                    logger.info('🗑️ Message revoked/deleted', { from: senderId, id: messageId });
+                    this.emit('revoke', { senderId, messageId });
+                }
+            }
+        });
     }
 
     /**

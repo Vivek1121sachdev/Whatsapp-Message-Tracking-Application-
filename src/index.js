@@ -84,6 +84,14 @@ class Application {
                 database.saveRawMessage(message);
             });
 
+            whatsappClient.on('revoke', ({ senderId, messageId }) => {
+                // Remove from correlation buffer if it exists
+                sessionCorrelator.removeMessage(senderId, messageId);
+
+                // Optionally update database or notify dashboard (future enhancement)
+                logger.debug('Handled message revoke in application', { senderId, messageId });
+            });
+
             whatsappClient.on('loggedOut', () => {
                 websocket.broadcastWhatsAppStatus(false);
                 logger.error('WhatsApp logged out! Please restart and scan QR again.');
